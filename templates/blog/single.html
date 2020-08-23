@@ -78,11 +78,16 @@
       </div>
       <div class="d-flex">
 
+
+
+
         <span id="thumbs" data-value="{{post.id}}"></span>
         <div class="pr-2">
-          <span id="up">0</span>
-          <a class="btn btn-link text-dark p-0 border-0 btn-outline-light thumbaction" href="" value="thumbsup"
-            data-toggle="tooltip" title="I like this" role="button">
+          <span id="i_like_this"><span id="up">{{post.thumbsup}}</span></span>
+          <a {% if request.user.is_authenticated %}
+            class="btn btn-link text-dark p-0 border-0 btn-outline-light thumbaction" {% else %}
+            href="{% url 'accounts:register' %}" class="btn btn-link text-dark p-0 border-0 btn-outline-light"
+            {% endif %} value="thumbsup" data-toggle="tooltip" title="I like this" role="button">
             <svg id="thumbsup" width="1.5em" height="1.5em" viewBox="0 0 16 16" class="up bi bi-hand-thumbs-up"
               fill="currentColor" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd"
@@ -91,9 +96,11 @@
           </a>
         </div>
         <div class="pr-2">
-          <span id="down">0</span>
-          <a class="btn btn-link text-dark p-0 border-0 btn-outline-light thumbaction" href="" value="thumbsdown"
-            data-toggle="tooltip" title="I like this" role="button">
+          <span id="down">{{post.thumbsdown}}</span>
+          <a {% if request.user.is_authenticated %}
+            class="btn btn-link text-dark p-0 border-0 btn-outline-light thumbaction" {% else %}
+            href="{% url 'accounts:register' %}" class="btn btn-link text-dark p-0 border-0 btn-outline-light"
+            {% endif %} value="thumbsdown" data-toggle="tooltip" title="I dont like this" role="button">
             <svg id="thumbsdown" width="1.5em" height="1.5em" viewBox="0 0 16 16" class="down bi bi-hand-thumbs-down"
               fill="currentColor" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd"
@@ -101,6 +108,9 @@
             </svg>
           </a>
         </div>
+
+
+
 
         {% if request.user.is_authenticated %}
         <div class="pr-2">
@@ -252,6 +262,40 @@
               </form>');
   }
 
+  $(document).ready(function () {
+    $('.thumbaction').click(function (e) {
+      e.preventDefault();
+      var postid = document.getElementById('thumbs').getAttribute('data-value');
+      var button = $(this).attr("value");
+      $.ajax({
+        type: 'POST',
+        url: '{% url "accounts:thumbs" %}',
+        data: {
+          postid: postid,
+          csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+          action: 'thumbs',
+          button: button,
+        },
+        success: function (json) {
+          if (json.length < 1 || json == undefined) {
+            //empty
+          }
+          document.getElementById("up").innerHTML = json['up']
+          document.getElementById("down").innerHTML = json['down']
+          $("svg").removeClass("thumb-active");
+
+          if (json['remove'] == 'none') {
+            $("#" + button).removeClass("thumb-active");
+          } else {
+            $("#" + button).addClass("thumb-active");
+          }
+
+        },
+        error: function (xhr, errmsg, err) {}
+      });
+    });
+  });
+
   $('#myForm').trigger("reset");
 
   $(document).on('click', '#like-button', function (e) {
@@ -272,33 +316,6 @@
       }
     });
   })
-
-  $(document).ready(function () {
-    $('.thumbaction').click(function (e) {
-      var postid = document.getElementById('thumbs').getAttribute('data-value');
-      var button = $(this).attr("value");
-      e.preventDefault();
-      $.ajax({
-        type: 'POST',
-        url: '{% url "accounts:thumbs" %}',
-        data: {
-          postid: postid,
-          csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
-          action: 'thumbs',
-          button: button,
-        },
-        success: function (json) {
-          document.getElementById("up").innerHTML = json['up']
-          document.getElementById("down").innerHTML = json['down']
-
-          $("svg").removeClass("thumb-active");
-          $("#" + button).addClass("thumb-active");
-
-        },
-        error: function (xhr, errmsg, err) {}
-      });
-    });
-  });
 </script>
 
 {% include "base/footer.html" %}
